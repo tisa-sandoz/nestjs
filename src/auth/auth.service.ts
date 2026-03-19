@@ -7,6 +7,7 @@ import { MailService } from 'src/mail/mail.service';
 import type { Request, Response } from 'express'; // ✅ type-only import
 import { JwtService } from '@nestjs/jwt';
 import { VerifyOtpDto } from './dto/verifyotp.dto';
+import { LoginDto } from './dto/login.dto';
 
 // ✅ JWT Payload Type
 export type JwtPayload = {
@@ -153,6 +154,34 @@ export class AuthService {
 
     return {
       message: 'OTP verified successfully',
+    };
+  }
+
+  async login(data: LoginDto, req: Request) {
+    const { email, password } = data;
+    console.log('password', password);
+
+    const user = await this.prisma.user.findUnique({ where: { email } });
+    if (!user) {
+      throw new BadRequestException('user doesnot exsist');
+    }
+    const isMatch = await bcrypt.compare(user.password, password);
+    if (!isMatch) {
+      throw new BadRequestException('incorrect password');
+    }
+    if (!user.isVerified) {
+      throw new BadRequestException('please verify your email first');
+    }
+    // ✅ STORE USER IN SESSION
+    req.session.user = {
+      id: user.id,
+      email: user.email,
+      name: user.name,
+    };
+
+    return {
+      message: 'login successfull',
+      user: req.session.user,
     };
   }
 }

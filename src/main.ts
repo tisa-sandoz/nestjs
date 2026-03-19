@@ -3,24 +3,37 @@ import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
 import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
 import cookieParser from 'cookie-parser';
+// import { getSessionConfig } from './config/session.config';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
 
-  app.setGlobalPrefix('api/v1');
+  // ✅ Correct order
   app.use(cookieParser());
+
+  // const redisClient = app.get('REDIS_CLIENT');
+
+  // app.use(getSessionConfig(redisClient));
+
+  app.enableCors({
+    origin: 'http://localhost:3000',
+    credentials: true,
+  });
+
+  app.setGlobalPrefix('api/v1');
+
   const config = new DocumentBuilder()
     .setTitle('Product API')
     .setDescription('API documentation for products')
     .setVersion('1.0')
-    .addBearerAuth() // 🔥 for Authorize button
+    // ❌ remove bearer auth for now
     .build();
 
   const document = SwaggerModule.createDocument(app, config);
+  SwaggerModule.setup('api-docs', app, document);
 
-  SwaggerModule.setup('api-docs', app, document); // better naming
-  console.log('ENV:', process.env.DATABASE_URL);
   await app.listen(process.env.PORT ?? 3000);
-  console.log('Swagger running at http://localhost:3000/api-docs');
+
+  console.log(`Server running on http://localhost:${process.env.PORT ?? 3000}`);
 }
 bootstrap();

@@ -4,6 +4,7 @@ import { SignUpDto } from './dto/signup.dto';
 import { ApiBody, ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
 import type { Response, Request } from 'express';
 import { VerifyOtpDto } from './dto/verifyotp.dto';
+import { LoginDto } from './dto/login.dto';
 
 @ApiTags('Auth')
 @Controller('auth')
@@ -39,5 +40,15 @@ export class AuthController {
     @Res({ passthrough: true }) res: Response,
   ) {
     return this.authService.verifyOtp(data, req, res);
+  }
+  @Post('login')
+  @ApiOperation({ summary: 'login' })
+  @ApiBody({
+    type: LoginDto,
+    description: 'login',
+  })
+  @Post('login')
+  login(@Body() data: LoginDto, @Req() req: Request) {
+    return this.authService.login(data, req);
   }
 }
