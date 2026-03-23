@@ -29,6 +29,5 @@ export const getSessionConfig = async (): Promise<RequestHandler> => {
   };
 
   // ✅ FIX: cast to RequestHandler
-  // eslint-disable-next-line @typescript-eslint/no-unsafe-call
-  return session(sessionConfig) as RequestHandler;
+  return session(sessionConfig);
 };

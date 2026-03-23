@@ -3,37 +3,37 @@ import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
 import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
 import cookieParser from 'cookie-parser';
-// import { getSessionConfig } from './config/session.config';
+import { getSessionConfig } from './config/session.config';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
-
-  // ✅ Correct order
+  // ✅ 1. Cookie parser first
   app.use(cookieParser());
-
-  // const redisClient = app.get('REDIS_CLIENT');
-
-  // app.use(getSessionConfig(redisClient));
-
+  // ✅ 2. Await session middleware (IMPORTANT FIX)
+  app.use(await getSessionConfig());
+  // ✅ 3. CORS (must allow credentials for cookies)
   app.enableCors({
     origin: 'http://localhost:3000',
     credentials: true,
   });
-
+  // ✅ 4. Global prefix
   app.setGlobalPrefix('api/v1');
-
+  // ✅ 5. Swagger setup
   const config = new DocumentBuilder()
     .setTitle('Product API')
     .setDescription('API documentation for products')
     .setVersion('1.0')
-    // ❌ remove bearer auth for now
     .build();
-
   const document = SwaggerModule.createDocument(app, config);
-  SwaggerModule.setup('api-docs', app, document);
+  SwaggerModule.setup('api-docs', app, document, {
+    useGlobalPrefix: true,
+  });
 
-  await app.listen(process.env.PORT ?? 3000);
+  // ✅ 6. Start server
+  const PORT = process.env.PORT ?? 3000;
+  await app.listen(PORT);
 
-  console.log(`Server running on http://localhost:${process.env.PORT ?? 3000}`);
+  console.log(`Server running on http://localhost:${PORT}`);
 }
+
 bootstrap();
