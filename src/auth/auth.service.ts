@@ -1,4 +1,8 @@
-import { BadRequestException, Injectable } from '@nestjs/common';
+import {
+  BadRequestException,
+  Injectable,
+  UnauthorizedException,
+} from '@nestjs/common';
 import { SignUpDto } from './dto/signup.dto';
 import { PrismaService } from 'src/prisma/prisma.service';
 import * as bcrypt from 'bcrypt';
@@ -8,6 +12,8 @@ import type { Request, Response } from 'express'; // ✅ type-only import
 import { JwtService } from '@nestjs/jwt';
 import { VerifyOtpDto } from './dto/verifyotp.dto';
 import { LoginDto } from './dto/login.dto';
+import { ConfigService } from '@nestjs/config';
+import { GoogleAuthService } from './google-auth.service';
 
 // ✅ JWT Payload Type
 export type JwtPayload = {
@@ -22,6 +28,8 @@ export class AuthService {
     private prisma: PrismaService,
     private mailService: MailService,
     private jwtService: JwtService,
+    private configService: ConfigService,
+    private googleService: GoogleAuthService,
   ) {}
 
   // ================= SIGNUP =================
@@ -159,13 +167,14 @@ export class AuthService {
 
   async login(data: LoginDto, req: Request) {
     const { email, password } = data;
-    console.log('password', password);
 
     const user = await this.prisma.user.findUnique({ where: { email } });
+
     if (!user) {
       throw new BadRequestException('user doesnot exsist');
     }
-    const isMatch = await bcrypt.compare(user.password, password);
+    const isMatch = await bcrypt.compare(password, user.password);
+
     if (!isMatch) {
       throw new BadRequestException('incorrect password');
     }
@@ -181,6 +190,46 @@ export class AuthService {
 
     return {
       message: 'login successfull',
+      user: req.session.user,
+    };
+  }
+
+  getGoogleAuthUrl(): string {
+    return this.googleService.getAuthUrl();
+  }
+  async handleGoogleLogin(code: string, req: Request) {
+    if (!code) {
+      throw new UnauthorizedException('Authorization code missing');
+    }
+    const googleUser = await this.googleService.getUserFromCode(code);
+    if (!googleUser?.email) {
+      throw new UnauthorizedException('Invalid Google user');
+    }
+
+    const normalizedEmail = googleUser.email.toLowerCase().trim();
+
+    let user = await this.prisma.user.findUnique({
+      where: { email: normalizedEmail },
+    });
+
+    if (!user) {
+      user = await this.prisma.user.create({
+        data: {
+          name: googleUser.name,
+          email: normalizedEmail,
+          password: '',
+          isVerified: true,
+        },
+      });
+    }
+    req.session.user = {
+      id: user.id,
+      email: user.email,
+      name: user.name,
+    };
+
+    return {
+      message: 'Google login successful',
       user: req.session.user,
     };
   }

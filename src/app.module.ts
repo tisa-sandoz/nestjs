@@ -9,12 +9,13 @@ import { AuthModule } from './auth/auth.module';
 import { PrismaModule } from './prisma/prisma.module';
 import { MailModule } from './mail/mail.module';
 import mailConfig from './config/mail.config';
+import googleConfig from './config/google.config';
 
 @Module({
   imports: [
     ConfigModule.forRoot({
       isGlobal: true,
-      load: [mailConfig],
+      load: [mailConfig, googleConfig],
     }),
     UserModule,
     ProductModule,

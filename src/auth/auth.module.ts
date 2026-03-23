@@ -3,6 +3,7 @@ import { AuthController } from './auth.controller';
 import { AuthService } from './auth.service';
 import { MailModule } from 'src/mail/mail.module';
 import { JwtModule } from '@nestjs/jwt';
+import { GoogleAuthService } from './google-auth.service';
 @Module({
   imports: [
     MailModule,
@@ -12,6 +13,6 @@ import { JwtModule } from '@nestjs/jwt';
     }),
   ],
   controllers: [AuthController],
-  providers: [AuthService],
+  providers: [AuthService, GoogleAuthService],
 })
 export class AuthModule {}

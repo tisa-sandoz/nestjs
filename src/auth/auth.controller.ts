@@ -1,4 +1,4 @@
-import { Body, Controller, Post, Req, Res } from '@nestjs/common';
+import { Body, Controller, Get, Post, Query, Req, Res } from '@nestjs/common';
 import { AuthService } from './auth.service';
 import { SignUpDto } from './dto/signup.dto';
 import { ApiBody, ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
@@ -50,5 +50,23 @@ export class AuthController {
   @Post('login')
   login(@Body() data: LoginDto, @Req() req: Request) {
     return this.authService.login(data, req);
+  }
+  @Get('google')
+  googleLogin(@Res() res: Response) {
+    const url = this.authService.getGoogleAuthUrl();
+    return res.redirect(url);
+  }
+  @Get('google/callback')
+  async googleCallback(
+    @Query('code') code: string,
+    @Req() req: Request,
+    @Res() res: Response,
+  ) {
+    await this.authService.handleGoogleLogin(code, req);
+
+    // ❌ REMOVE manual cookie
+    // express-session already handles this
+
+    return res.redirect('http://localhost:5173'); // frontend
   }
 }
