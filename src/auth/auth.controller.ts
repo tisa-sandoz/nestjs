@@ -1,17 +1,33 @@
-import { Body, Controller, Get, Post, Query, Req, Res } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Get,
+  Post,
+  Query,
+  Req,
+  Res,
+  UseGuards,
+} from '@nestjs/common';
 import { AuthService } from './auth.service';
 import { SignUpDto } from './dto/signup.dto';
 import { ApiBody, ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
 import type { Response, Request } from 'express';
 import { VerifyOtpDto } from './dto/verifyotp.dto';
 import { LoginDto } from './dto/login.dto';
+import { SessionAuthGuard } from './guards/session-auth.guard';
 
 @ApiTags('Auth')
 @Controller('auth')
 export class AuthController {
   constructor(private readonly authService: AuthService) {}
 
-  @Post()
+  @Get('me')
+  @UseGuards(SessionAuthGuard)
+  getMe(@Req() req: Request) {
+    const userId = req.session.user!.id;
+    return this.authService.getMe(userId);
+  }
+  @Post('signup')
   @ApiOperation({ summary: 'user signup' })
   @ApiBody({
     type: SignUpDto,
@@ -47,9 +63,18 @@ export class AuthController {
     type: LoginDto,
     description: 'login',
   })
-  @Post('login')
-  login(@Body() data: LoginDto, @Req() req: Request) {
-    return this.authService.login(data, req);
+  async login(@Body() data: LoginDto, @Req() req: Request) {
+    const user = await this.authService.login(data);
+    req.session.user = {
+      id: user.id,
+      // email: user.email,
+      // name: user.name,
+      // role: user?.role, // 🔥 IMPORTANT (add this)
+    };
+    return {
+      message: 'login successful',
+      user: req.session.user,
+    };
   }
   @Get('google')
   googleLogin(@Res() res: Response) {
