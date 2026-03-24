@@ -32,6 +32,25 @@ export class AuthService {
     private googleService: GoogleAuthService,
   ) {}
 
+  //==================GetMe ===================
+  async getMe(userId: string) {
+    const user = await this.prisma.user.findUnique({
+      where: { id: userId },
+      select: {
+        id: true,
+        email: true,
+        name: true,
+        role: true,
+      },
+    });
+    if (!user) {
+      throw new UnauthorizedException('User not found');
+    }
+    return {
+      user,
+    };
+  }
+
   // ================= SIGNUP =================
   async signUp(data: SignUpDto, res: Response) {
     const normalizedEmail = data.email.toLowerCase().trim();
@@ -148,7 +167,7 @@ export class AuthService {
     }
 
     // ✅ Update user
-    await this.prisma.user.update({
+    const updatedUser = await this.prisma.user.update({
       where: { id: user.id },
       data: {
         isVerified: true,
@@ -160,12 +179,15 @@ export class AuthService {
     // ✅ Clear cookie
     res.clearCookie('tempToken');
 
+    req.session.user = {
+      id: updatedUser.id,
+    };
     return {
       message: 'OTP verified successfully',
     };
   }
 
-  async login(data: LoginDto, req: Request) {
+  async login(data: LoginDto) {
     const { email, password } = data;
 
     const user = await this.prisma.user.findUnique({ where: { email } });
@@ -181,17 +203,12 @@ export class AuthService {
     if (!user.isVerified) {
       throw new BadRequestException('please verify your email first');
     }
-    // ✅ STORE USER IN SESSION
-    req.session.user = {
-      id: user.id,
-      email: user.email,
-      name: user.name,
-    };
+    // return {
+    //   message: 'login successfull',
+    //   user: req.session.user,
+    // };
 
-    return {
-      message: 'login successfull',
-      user: req.session.user,
-    };
+    return user;
   }
 
   getGoogleAuthUrl(): string {
@@ -224,8 +241,6 @@ export class AuthService {
     }
     req.session.user = {
       id: user.id,
-      email: user.email,
-      name: user.name,
     };
 
     return {
