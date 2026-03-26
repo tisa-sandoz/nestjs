@@ -10,13 +10,21 @@ import { PrismaModule } from './prisma/prisma.module';
 import { MailModule } from './mail/mail.module';
 import mailConfig from './config/mail.config';
 import googleConfig from './config/google.config';
-
+import { ThrottlerGuard, ThrottlerModule } from '@nestjs/throttler';
+import { APP_GUARD } from '@nestjs/core';
 @Module({
   imports: [
     ConfigModule.forRoot({
       isGlobal: true,
       load: [mailConfig, googleConfig],
     }),
+    //security for ratelimiting
+    ThrottlerModule.forRoot([
+      {
+        ttl: 60000,
+        limit: 10,
+      },
+    ]),
     UserModule,
     ProductModule,
     CustomerModule,
@@ -25,6 +33,12 @@ import googleConfig from './config/google.config';
     MailModule,
   ],
   controllers: [AppController],
-  providers: [AppService],
+  providers: [
+    AppService,
+    {
+      provide: APP_GUARD,
+      useClass: ThrottlerGuard,
+    },
+  ],
 })
 export class AppModule {}

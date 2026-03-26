@@ -19,6 +19,9 @@
     "test:debug": "node --inspect-brk -r tsconfig-paths/register -r ts-node/register node_modules/.bin/jest --runInBand",
     "test:e2e": "jest --config ./test/jest-e2e.json"
   },
+  "prisma": {
+    "seed": "ts-node prisma/seed.ts"
+  },
   "dependencies": {
     "@nestjs/common": "^11.0.1",
     "@nestjs/config": "^4.0.3",
@@ -26,6 +29,7 @@
     "@nestjs/jwt": "^11.0.2",
     "@nestjs/platform-express": "^11.1.17",
     "@nestjs/swagger": "^11.2.6",
+    "@nestjs/throttler": "^6.5.0",
     "@prisma/adapter-pg": "^7.5.0",
     "@prisma/client": "^7.5.0",
     "axios": "^1.13.6",
@@ -34,8 +38,10 @@
     "class-validator": "^0.14.4",
     "connect-redis": "^9.0.0",
     "cookie-parser": "^1.4.7",
+    "csurf": "^1.11.0",
     "dotenv": "^17.3.1",
     "express-session": "^1.19.0",
+    "helmet": "^8.1.0",
     "jsonwebtoken": "^9.0.3",
     "nodemailer": "^8.0.2",
     "redis": "^5.11.0",
@@ -51,6 +57,7 @@
     "@nestjs/testing": "^11.0.1",
     "@types/bcrypt": "^6.0.0",
     "@types/cookie-parser": "^1.4.10",
+    "@types/csurf": "^1.11.5",
     "@types/express": "^5.0.6",
     "@types/express-session": "^1.18.2",
     "@types/jest": "^30.0.0",

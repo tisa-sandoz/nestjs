@@ -1,66 +1,70 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, NotFoundException } from '@nestjs/common';
+import { PrismaService } from 'src/prisma/prisma.service';
+import { CreateProductDto } from './dto/create-product.dto';
+import { Product } from '@prisma/client';
 
 @Injectable()
 export class ProductService {
-  private products = [
-    { id: 1, pdtname: 'mobile', price: 200000, isDeleted: false },
-    { id: 2, pdtname: 'laptop', price: 300000, isDeleted: false },
-    { id: 3, pdtname: 'tablet', price: 2500000, isDeleted: false },
-  ];
+  constructor(private prisma: PrismaService) {}
 
-  //fetch all products
-  getProducts() {
-    return this.products;
+  async createProduct(data: CreateProductDto): Promise<Product> {
+    const product = await this.prisma.product.create({
+      data: {
+        ...data,
+      },
+    });
+    return product;
   }
 
-  //getproduct by id
-  getProductById(id: number) {
-    return this.products.find((p) => p.id === id);
+  async getProducts(): Promise<Product[]> {
+    const products = await this.prisma.product.findMany({
+      where: { isDeleted: false },
+    });
+    return products;
   }
 
-  //create a product
-  createProduct(data: { pdtname: string; price: number }) {
-    const pdt = {
-      id: Date.now(),
-      isDeleted: false,
-      ...data,
-    };
-    return pdt;
+  async getProductById(id: string): Promise<Product | null> {
+    const product = await this.prisma.product.findUnique({
+      where: { id },
+    });
+    if (!product) {
+      throw new NotFoundException('Product not found');
+    }
+    return product;
   }
 
-  //put update the whole product
-  updateProduct(id: number, data: { pdtname: string; price: number }) {
-    const pdt = this.products.find((p) => p.id === id);
-    if (!pdt) {
-      throw new Error('no product');
+  async updateProduct(id: string, data: CreateProductDto): Promise<Product> {
+    const existing = await this.prisma.product.findFirst({
+      where: { id, isDeleted: false },
+    });
+
+    if (!existing) {
+      throw new NotFoundException('Product not found');
     }
-    pdt.pdtname = data.pdtname;
-    pdt.price = Number(data.price);
+
+    return this.prisma.product.update({
+      where: { id },
+      data: {
+        name: data.name,
+        price: data.price,
+        quantity: data.quantity,
+        description: data.description,
+      },
+    });
   }
 
-  //patch : update only some values of the product
-  patchProduct(id: number, data: Partial<{ pdtname: string; price: number }>) {
-    const pdt = this.products.find((p) => p.id === id);
-    if (!pdt) {
-      throw new Error('pdt not found');
+  async deleteProduct(id: string): Promise<Product> {
+    const existing = await this.prisma.product.findUnique({
+      where: { id },
+    });
+
+    if (!existing || existing.isDeleted) {
+      throw new NotFoundException('Product not found');
     }
 
-    if (data.pdtname !== undefined) {
-      pdt.pdtname = data.pdtname;
-    }
-    if (data.price !== undefined) {
-      pdt.price = data.price;
-    }
-
-    return pdt;
-  }
-
-  deleteProduct(id: number) {
-    const pdt = this.products.find((p) => p.id === id);
-    if (!pdt) {
-      throw new Error('Product not found');
-    }
-    pdt.isDeleted = true;
-    return pdt;
+    return this.prisma.product.update({
+      where: { id },
+      data: { isDeleted: true },
+    });
   }
 }

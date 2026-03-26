@@ -4,6 +4,7 @@ import { AuthService } from './auth.service';
 import { MailModule } from 'src/mail/mail.module';
 import { JwtModule } from '@nestjs/jwt';
 import { GoogleAuthService } from './google-auth.service';
+import { RedisModule } from 'src/common/redis/redis.module';
 @Module({
   imports: [
     MailModule,
@@ -11,6 +12,7 @@ import { GoogleAuthService } from './google-auth.service';
       secret: process.env.JWT_SECRET || 'temp-secret', // ✅ for now
       signOptions: { expiresIn: '5m' },
     }),
+    RedisModule,
   ],
   controllers: [AuthController],
   providers: [AuthService, GoogleAuthService],

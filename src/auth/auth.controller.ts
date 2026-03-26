@@ -14,7 +14,8 @@ import { ApiBody, ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
 import type { Response, Request } from 'express';
 import { VerifyOtpDto } from './dto/verifyotp.dto';
 import { LoginDto } from './dto/login.dto';
-import { SessionAuthGuard } from './guards/session-auth.guard';
+import { SessionAuthGuard } from '../common/guards/session-auth.guard';
+import { Role } from 'src/common/enums/role.enum';
 
 @ApiTags('Auth')
 @Controller('auth')
@@ -44,6 +45,7 @@ export class AuthController {
   signUp(@Body() data: SignUpDto, @Res({ passthrough: true }) res: Response) {
     return this.authService.signUp(data, res);
   }
+
   @Post('verify-otp')
   @ApiOperation({ summary: 'verify otp' })
   @ApiBody({
@@ -57,6 +59,7 @@ export class AuthController {
   ) {
     return this.authService.verifyOtp(data, req, res);
   }
+
   @Post('login')
   @ApiOperation({ summary: 'login' })
   @ApiBody({
@@ -69,7 +72,7 @@ export class AuthController {
       id: user.id,
       // email: user.email,
       // name: user.name,
-      // role: user?.role, // 🔥 IMPORTANT (add this)
+      role: user?.role as Role, // 🔥 IMPORTANT (add this)
     };
     return {
       message: 'login successful',
@@ -93,5 +96,10 @@ export class AuthController {
     // express-session already handles this
 
     return res.redirect('http://localhost:5173'); // frontend
+  }
+  @Post('logout')
+  @UseGuards(SessionAuthGuard)
+  logout(@Req() req: Request, @Res({ passthrough: true }) res: Response) {
+    return this.authService.logout(req, res);
   }
 }
